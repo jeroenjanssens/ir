@@ -83,7 +83,8 @@ fn try_main() -> Result<(), Box<dyn Error>> {
         }
         Some(("render", _)) => {
             let render = cli::parse_render_args(argv[2..].to_vec())?;
-            runtime::cmd_render(
+            runtime::cmd_quarto(
+                quarto::QuartoCommand::Render,
                 &render.source,
                 &render.with_deps,
                 runtime::RSelectionArgs {
@@ -94,9 +95,32 @@ fn try_main() -> Result<(), Box<dyn Error>> {
                     exclude_newer: render.exclude_newer.as_deref(),
                     python_exclude_newer: render.python_exclude_newer.as_deref(),
                 },
-                &render.render_args,
-                render.isolated,
-                render.vanilla,
+                &render.quarto_args,
+                quarto::QuartoOptions {
+                    isolated: render.isolated,
+                    vanilla: render.vanilla,
+                },
+            )
+        }
+        Some(("preview", _)) => {
+            let preview = cli::parse_preview_args(argv[2..].to_vec())?;
+            runtime::cmd_quarto(
+                quarto::QuartoCommand::Preview,
+                &preview.source,
+                &preview.with_deps,
+                runtime::RSelectionArgs {
+                    r_requirement: preview.r_requirement.as_deref(),
+                    rscript: preview.rscript.as_deref(),
+                },
+                runtime::SnapshotArgs {
+                    exclude_newer: preview.exclude_newer.as_deref(),
+                    python_exclude_newer: preview.python_exclude_newer.as_deref(),
+                },
+                &preview.quarto_args,
+                quarto::QuartoOptions {
+                    isolated: preview.isolated,
+                    vanilla: preview.vanilla,
+                },
             )
         }
         Some(("quickstart", _)) => quickstart::cmd_quickstart(),

@@ -13,7 +13,7 @@ use time::{Date, OffsetDateTime};
 use crate::driver;
 use crate::lock::{resolver_lock_path, FileLock};
 use crate::python;
-use crate::quarto::{self, RenderSource};
+use crate::quarto::{self, QuartoCommand, QuartoOptions, QuartoSource};
 use crate::resolve_cache;
 use crate::rig;
 use crate::script::RunSource;
@@ -66,16 +66,16 @@ pub(crate) fn cmd_run(
     std::process::exit(code);
 }
 
-/// Resolve dependencies for `source`, then render it with Quarto. Exits the
+/// Resolve dependencies for `source`, then run it with Quarto. Exits the
 /// process with Quarto's own exit code.
-pub(crate) fn cmd_render(
-    source: &RenderSource,
+pub(crate) fn cmd_quarto(
+    command: QuartoCommand,
+    source: &QuartoSource,
     with_deps: &[String],
     r_selection: RSelectionArgs<'_>,
     snapshots: SnapshotArgs<'_>,
-    render_args: &[String],
-    isolated: bool,
-    vanilla: bool,
+    quarto_args: &[String],
+    options: QuartoOptions,
 ) -> Result<(), Box<dyn Error>> {
     let mut spec = source.script_spec()?;
     apply_exclude_newer_overrides(
@@ -85,18 +85,21 @@ pub(crate) fn cmd_render(
     )?;
     spec.dependencies.extend(with_deps.iter().cloned());
     spec.quarto_render = true;
-    let isolated = isolated || spec.isolated;
+    let options = QuartoOptions {
+        isolated: options.isolated || spec.isolated,
+        ..options
+    };
     let rscript = rscript_for_spec(&spec, r_selection)?;
 
     let resolved = resolve_runtime(&rscript, &spec, true, &[])?;
     let code = quarto::run(
+        command,
         &rscript,
         resolved.library.as_deref(),
         resolved.python.as_deref(),
         source.path(),
-        render_args,
-        isolated,
-        vanilla,
+        quarto_args,
+        options,
     )?;
     std::process::exit(code);
 }
