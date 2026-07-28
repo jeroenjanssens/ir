@@ -437,7 +437,7 @@ fn resolve_library_inner(
         cmd.args(rscript_args)
             .arg(&driver)
             .stdin(Stdio::piped())
-            .stdout(Stdio::inherit())
+            .stdout(io::stderr())
             .stderr(Stdio::inherit())
             .env("IR_CACHE_DIR", cache_dir)
             // pak suppresses progress in noninteractive Rscript unless this is set.
@@ -519,7 +519,6 @@ fn resolve_library_inner(
         let current_status = child
             .wait()
             .map_err(|e| format!("failed to wait for dependency resolver: {e}"))?;
-
         if tooling_restart_requested(&current_status, &restart_file) {
             if !retried_tooling_restart {
                 retried_tooling_restart = true;
